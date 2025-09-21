@@ -28,4 +28,9 @@ class Release extends Model
     {
         return $this->belongsTo(Artist::class);
     }
+
+    public function pages()
+    {
+        return $this->hasMany(Page::class)->orderBy('position');
+    }
 }

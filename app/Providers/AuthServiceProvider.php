@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\Artist;
 use App\Models\Release;
+use App\Models\Page;
 use App\Policies\ArtistPolicy;
 use App\Policies\ReleasePolicy;
+use App\Policies\PagePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider
@@ -18,6 +20,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Artist::class  => ArtistPolicy::class,
         Release::class => ReleasePolicy::class,
+        Page::class    => PagePolicy::class,
     ];
 
     /**

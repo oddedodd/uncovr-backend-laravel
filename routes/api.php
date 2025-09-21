@@ -4,22 +4,32 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ArtistController;
 use App\Http\Controllers\ReleaseController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PublicReleaseController;
+use App\Http\Controllers\PublicPageController;
 
 Route::prefix('v1')->group(function () {
     // =========================
     // PUBLIC (ingen auth)
     // =========================
+
+    // Alle publiserte releases
     Route::get('releases', [PublicReleaseController::class, 'index'])
         ->name('public.releases.index');
 
+    // Publiserte releases for en artist (via artist-id)
     Route::get('artists/{artist}/releases/public', [PublicReleaseController::class, 'byArtist'])
         ->name('public.releases.by-artist');
 
-    // Eksplicit slug-route for å unngå kollisjon med releases/{release}
+    // Én publisert release via slug
     Route::get('releases/slug/{slug}', [PublicReleaseController::class, 'showBySlug'])
         ->where('slug', '[A-Za-z0-9\-]+')
         ->name('public.releases.by-slug');
+
+    // Publiserte sider for en release (via slug)
+    Route::get('releases/slug/{slug}/pages', [PublicPageController::class, 'byReleaseSlug'])
+        ->where('slug', '[A-Za-z0-9\-]+')
+        ->name('public.pages.by-release-slug');
 
     // =========================
     // AUTH (krever token)
@@ -38,12 +48,18 @@ Route::prefix('v1')->group(function () {
             Route::get('artist/dashboard', [ArtistController::class, 'dashboard']);
         });
 
-        // Release (beskyttet) – nested (liste/opprett) + single (vis/oppdater/slett)
+        // Release (beskyttet)
         Route::get('artists/{artist}/releases', [ReleaseController::class, 'index']);
         Route::post('artists/{artist}/releases', [ReleaseController::class, 'store']);
-
         Route::get('releases/{release}', [ReleaseController::class, 'show']);
         Route::patch('releases/{release}', [ReleaseController::class, 'update']);
         Route::delete('releases/{release}', [ReleaseController::class, 'destroy']);
+
+        // Page (beskyttet)
+        Route::get('releases/{release}/pages', [PageController::class, 'index']);
+        Route::post('releases/{release}/pages', [PageController::class, 'store']);
+        Route::get('pages/{page}', [PageController::class, 'show']);
+        Route::patch('pages/{page}', [PageController::class, 'update']);
+        Route::delete('pages/{page}', [PageController::class, 'destroy']);
     });
 });
