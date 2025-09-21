@@ -19,11 +19,12 @@ class ReleaseForm
                         if (auth()->user()?->hasRole('artist')) {
                             $q->where('user_id', auth()->id());
                         }
-                        // ingen return nødvendig i v4
                     })
                     ->required()
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'label'])) // 👈 skjul for artist
+                    ,
 
                 Forms\Components\TextInput::make('title')
                     ->required()

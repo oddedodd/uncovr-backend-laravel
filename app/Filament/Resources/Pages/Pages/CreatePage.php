@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Pages\Pages;
 
 use App\Filament\Resources\Pages\PageResource;
-use App\Models\Page;
 use App\Models\Release;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
@@ -14,46 +13,34 @@ class CreatePage extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Generator for slug (unik per release_id)
-        $base = !empty($data['slug'] ?? '')
-            ? Str::slug((string) $data['slug'])
-            : Str::slug((string) ($data['title'] ?? ''));
+        // Generer slug hvis tomt
+        if (empty($data['slug']) && !empty($data['title'])) {
+            $base = Str::slug($data['title']) ?: 'page';
+            $slug = $base;
+            $i = 1;
 
-        $base = $base !== '' ? $base : 'page';
-        $slug = $base;
-        $i = 1;
-
-        $releaseId = $data['release_id'] ?? null;
-
-        // Hvis release_id mangler (skjema skal kreve det), prøv å avlede fra valgt release (fail-safe)
-        if (!$releaseId && method_exists($this, 'getRecord')) {
-            $releaseId = $this->getRecord()->release_id ?? null;
+            $exists = fn ($s) => \App\Models\Page::where('slug', $s)->exists();
+            while ($exists($slug)) {
+                $slug = $base . '-' . $i++;
+            }
+            $data['slug'] = $slug;
         }
 
-        while (
-            $releaseId &&
-            Page::where('release_id', $releaseId)->where('slug', $slug)->exists()
-        ) {
-            $slug = $base . '-' . $i++;
-        }
+        // Artist kan kun bruke egne releases
+        if (auth()->user()?->hasRole('artist')) {
+            $releaseId = $data['release_id'] ?? null;
 
-        $data['slug'] = $slug;
+            if (!$releaseId) {
+                throw new \RuntimeException('Release is required.');
+            }
 
-        // Sett position hvis ikke satt: sist i rekkefølgen for release
-        if (empty($data['position'] ?? null) && $releaseId) {
-            $last = Page::where('release_id', $releaseId)->max('position') ?? 0;
-            $data['position'] = $last + 1;
-        }
-
-        // (Valgfritt) Hvis innlogget er artist: sikre at valgt release tilhører vedkommende
-        if (auth()->user()?->hasRole('artist') && $releaseId) {
-            // Filament-formen vår filtrerer allerede, men vi låser det likevel:
-            $owned = Release::where('id', $releaseId)
-                ->whereHas('artist', fn($q) => $q->where('user_id', auth()->id()))
+            $owned = Release::query()
+                ->where('id', $releaseId)
+                ->whereHas('artist', fn ($q) => $q->where('user_id', auth()->id()))
                 ->exists();
 
             if (!$owned) {
-                abort(403, 'You cannot create pages for this release.');
+                throw new \RuntimeException('You are not allowed to create a page for this release.');
             }
         }
 
