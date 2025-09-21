@@ -2,55 +2,60 @@
 
 namespace App\Filament\Resources\Releases\Schemas;
 
+use App\Models\Release;
+use Filament\Schemas\Schema;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Illuminate\Database\Eloquent\Builder;
 
 class ReleaseForm
 {
-    public static function configure(Forms\Form $form): Forms\Form
+    public static function configure(Schema $schema): Schema
     {
-        return $form->schema([
-            Forms\Components\Select::make('artist_id')
-                ->relationship('artist', 'name', modifyQueryUsing: function (Builder $q) {
-                    if (auth()->user()?->hasRole('artist')) {
-                        $q->where('user_id', auth()->id());
-                    }
-                    return $q;
-                })
-                ->required()
-                ->searchable(),
+        return $schema
+            ->model(Release::class) // 👈 Viktig i v4
+            ->schema([
+                Forms\Components\Select::make('artist_id')
+                    ->relationship('artist', 'name', modifyQueryUsing: function (Builder $q) {
+                        if (auth()->user()?->hasRole('artist')) {
+                            $q->where('user_id', auth()->id());
+                        }
+                        // ingen return nødvendig i v4
+                    })
+                    ->required()
+                    ->searchable()
+                    ->preload(),
 
-            Forms\Components\TextInput::make('title')
-                ->required()
-                ->maxLength(255),
+                Forms\Components\TextInput::make('title')
+                    ->required()
+                    ->maxLength(255),
 
-            Forms\Components\TextInput::make('slug')
-                ->maxLength(255)
-                ->helperText('La stå tom for å generere automatisk.'),
+                Forms\Components\TextInput::make('slug')
+                    ->maxLength(255)
+                    ->helperText('Leave blank to auto-generate.'),
 
-            Forms\Components\Select::make('type')
-                ->options([
-                    'single' => 'single',
-                    'album'  => 'album',
-                    'ep'     => 'ep',
-                ])
-                ->default('single')
-                ->required(),
+                Forms\Components\Select::make('type')
+                    ->options([
+                        'single' => 'single',
+                        'album'  => 'album',
+                        'ep'     => 'ep',
+                    ])
+                    ->default('single')
+                    ->required(),
 
-            Forms\Components\DatePicker::make('release_date'),
+                Forms\Components\DatePicker::make('release_date'),
 
-            Forms\Components\Select::make('status')
-                ->options([
-                    'draft'     => 'draft',
-                    'published' => 'published',
-                ])
-                ->default('draft'),
+                Forms\Components\Select::make('status')
+                    ->options([
+                        'draft'     => 'draft',
+                        'published' => 'published',
+                    ])
+                    ->default('draft'),
 
-            Forms\Components\KeyValue::make('meta')
-                ->keyLabel('key')
-                ->valueLabel('value')
-                ->columnSpan('full'),
-        ])->columns(2);
+                Forms\Components\KeyValue::make('meta')
+                    ->keyLabel('key')
+                    ->valueLabel('value')
+                    ->columnSpan('full'),
+            ])
+            ->columns(2);
     }
 }

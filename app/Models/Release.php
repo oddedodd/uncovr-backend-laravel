@@ -10,12 +10,12 @@ class Release extends Model
     protected $fillable = [
         'artist_id',
         'title',
-        'type',
-        'release_date',
         'slug',
-        'meta',
+        'type',
         'status',
+        'release_date',
         'published_at',
+        'meta',
     ];
 
     protected $casts = [

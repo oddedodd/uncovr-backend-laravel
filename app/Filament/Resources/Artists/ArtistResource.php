@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class ArtistResource extends Resource
 {
@@ -21,7 +22,7 @@ class ArtistResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    // v4: string|\UnitEnum|null
+    // v4 krever string|\UnitEnum|null (ikke ?string)
     protected static string|\UnitEnum|null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 10;
     protected static ?string $navigationLabel = 'Artists';
@@ -29,13 +30,11 @@ class ArtistResource extends Resource
     protected static ?string $recordTitleAttribute = 'name';
 
     /**
-     * Skjul Artists i venstremenyen for 'artist'-rollen.
-     * Vis for admin/label.
+     * Skjul Artists i menyen for rollen "artist"
      */
     public static function shouldRegisterNavigation(): bool
     {
         $user = auth()->user();
-
         return $user && $user->hasAnyRole(['admin', 'label']);
     }
 
@@ -55,7 +54,7 @@ class ArtistResource extends Resource
     }
 
     /**
-     * Artist-rolle ser kun sin egen Artist-record (om du tillater visning).
+     * Artist-rolle ser kun sin egen Artist-record.
      * Admin/label ser alle.
      */
     public static function getEloquentQuery(): Builder
@@ -76,5 +75,42 @@ class ArtistResource extends Resource
             'create' => CreateArtist::route('/create'),
             'edit'   => EditArtist::route('/{record}/edit'),
         ];
+    }
+
+    // 🪄 Auto-slug ved create + eierskap
+    public static function mutateFormDataBeforeCreate(array $data): array
+    {
+        $data = static::ensureUniqueSlug($data);
+
+        if (auth()->user()?->hasRole('artist') && empty($data['user_id'] ?? null)) {
+            $data['user_id'] = auth()->id();
+        }
+
+        return $data;
+    }
+
+    // 🪄 Auto-slug ved update/save
+    public static function mutateFormDataBeforeSave(array $data): array
+    {
+        return static::ensureUniqueSlug($data);
+    }
+
+    private static function ensureUniqueSlug(array $data): array
+    {
+        if (empty($data['slug'] ?? '') && !empty($data['name'] ?? '')) {
+            $base = Str::slug($data['name']);
+        } else {
+            $base = Str::slug((string) ($data['slug'] ?? ''));
+        }
+
+        $slug = $base ?: 'artist';
+        $i = 1;
+
+        while (Artist::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        $data['slug'] = $slug;
+        return $data;
     }
 }

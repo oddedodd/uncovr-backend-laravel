@@ -8,7 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Page extends Model
 {
     protected $fillable = [
-        'release_id','title','slug','page_type','position','status','meta'
+        'release_id',
+        'title',
+        'slug',
+        'page_type',
+        'position',
+        'status',
+        'meta',
     ];
 
     protected $casts = [

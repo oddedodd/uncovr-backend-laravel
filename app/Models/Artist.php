@@ -2,23 +2,29 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Artist extends Model
 {
-    protected $fillable = ['user_id','name','slug','bio','links'];
-    protected $casts = [
-        'links' => 'array',
+    use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'name',
+        'slug',
+        'bio',
+        'links',
     ];
 
-    public function user(): BelongsTo
+    // Relasjoner
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function releases()
     {
-        return $this->hasMany(\App\Models\Release::class);
+        return $this->hasMany(Release::class);
     }
 }
