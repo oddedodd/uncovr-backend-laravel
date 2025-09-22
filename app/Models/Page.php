@@ -3,25 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Page extends Model
 {
+    use HasFactory;
+
+    // Allow Filament to mass-assign these:
     protected $fillable = [
         'release_id',
         'title',
         'slug',
-        'page_type',
-        'position',
-        'status',
-        'meta',
+        'cover_image',
+        'content',
     ];
 
-    protected $casts = [
-        'meta' => 'array',
-    ];
-
-    public function release(): BelongsTo
+    // (optional) if you prefer the “allow everything” approach:
+    // protected $guarded = [];
+    
+    public function release()
     {
         return $this->belongsTo(Release::class);
     }
