@@ -2,61 +2,65 @@
 
 namespace App\Filament\Resources\Releases\Schemas;
 
-use App\Models\Release;
-use Filament\Schemas\Schema;
 use Filament\Forms;
-use Illuminate\Database\Eloquent\Builder;
+use Filament\Schemas\Schema;
+use App\Models\Artist;
 
 class ReleaseForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema
-            ->model(Release::class) // 👈 Viktig i v4
-            ->schema([
-                Forms\Components\Select::make('artist_id')
-                    ->relationship('artist', 'name', modifyQueryUsing: function (Builder $q) {
-                        if (auth()->user()?->hasRole('artist')) {
-                            $q->where('user_id', auth()->id());
-                        }
-                    })
-                    ->required()
-                    ->searchable()
-                    ->preload()
-                    ->visible(fn () => auth()->user()?->hasAnyRole(['admin', 'label'])) // 👈 skjul for artist
-                    ,
+        return $schema->schema([
+            // Admin kan velge artist; artister får dette satt automatisk annet sted
+            Forms\Components\Select::make('artist_id')
+                ->label('Artist')
+                ->searchable()
+                ->preload()
+                ->options(fn () => Artist::query()
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->all()
+                )
+                ->visible(fn () => auth()->user()?->hasRole('admin'))
+                ->required(fn () => auth()->user()?->hasRole('admin')),
 
-                Forms\Components\TextInput::make('title')
-                    ->required()
-                    ->maxLength(255),
+            Forms\Components\TextInput::make('title')
+                ->label('Title')
+                ->required()
+                ->maxLength(255),
 
-                Forms\Components\TextInput::make('slug')
-                    ->maxLength(255)
-                    ->helperText('Leave blank to auto-generate.'),
+            Forms\Components\TextInput::make('slug')
+                ->label('Slug')
+                ->helperText('La stå tom for å generere automatisk.')
+                ->maxLength(255),
 
-                Forms\Components\Select::make('type')
-                    ->options([
-                        'single' => 'single',
-                        'album'  => 'album',
-                        'ep'     => 'ep',
-                    ])
-                    ->default('single')
-                    ->required(),
+            // ✨ Cover image på RELEASE
+            Forms\Components\FileUpload::make('cover_image')
+                ->label('Cover image')
+                ->disk('public')                 // krever `php artisan storage:link`
+                ->directory('releases/covers')
+                ->visibility('public')
+                ->image()
+                ->imageEditor()
+                ->maxSize(4096)
+                ->nullable(),
 
-                Forms\Components\DatePicker::make('release_date'),
+            // ✨ Innhold / rich text på RELEASE
+            Forms\Components\RichEditor::make('content')
+                ->label('Content')
+                ->toolbarButtons([
+                    'bold','italic','underline','strike',
+                    'h2','h3','blockquote','link','orderedList','bulletList','codeBlock',
+                ])
+                ->columnSpanFull()
+                ->nullable(),
 
-                Forms\Components\Select::make('status')
-                    ->options([
-                        'draft'     => 'draft',
-                        'published' => 'published',
-                    ])
-                    ->default('draft'),
+            Forms\Components\DatePicker::make('published_at')
+                ->label('Published at')
+                ->native(false)
+                ->closeOnDateSelection()
+                ->nullable(),
 
-                Forms\Components\KeyValue::make('meta')
-                    ->keyLabel('key')
-                    ->valueLabel('value')
-                    ->columnSpan('full'),
-            ])
-            ->columns(2);
+        ])->columns(2);
     }
 }

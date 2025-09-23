@@ -7,16 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Release extends Model
 {
-    protected $fillable = [
-        'artist_id',
-        'title',
-        'slug',
-        'type',
-        'status',
-        'release_date',
-        'published_at',
-        'meta',
-    ];
+    protected $fillable = ['artist_id','title','slug','cover_image','content','published_at'];
 
     protected $casts = [
         'release_date' => 'date',

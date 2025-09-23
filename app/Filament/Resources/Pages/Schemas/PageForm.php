@@ -11,7 +11,7 @@ class PageForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->schema([
-            // Knytt til Release (artist ser bare egne releases)
+            // Knytt til release (artist ser kun egne)
             Forms\Components\Select::make('release_id')
                 ->label('Release')
                 ->required()
@@ -33,7 +33,7 @@ class PageForm
                 ),
 
             Forms\Components\TextInput::make('title')
-                ->label('Title')
+                ->label('Page title')
                 ->required()
                 ->maxLength(255),
 
@@ -42,27 +42,7 @@ class PageForm
                 ->helperText('La stå tom for å generere automatisk.')
                 ->maxLength(255),
 
-            // Cover-bilde
-            Forms\Components\FileUpload::make('cover_image')
-                ->label('Cover image')
-                ->disk('public')           // sørg for at disk=public finnes
-                ->directory('pages/covers') // lagrer filene her
-                ->visibility('public')
-                ->image()
-                ->imageEditor()
-                ->maxSize(4096)             // 4MB
-                ->nullable(),
-
-            // Rich text-innhold
-            Forms\Components\RichEditor::make('content')
-                ->label('Content')
-                ->toolbarButtons([
-                    'bold', 'italic', 'underline', 'strike',
-                    'h2', 'h3', 'blockquote', 'link', 'orderedList', 'bulletList',
-                    'codeBlock',
-                ])
-                ->columnSpanFull()
-                ->nullable(),
+            // NB: Ikke lenger cover/content her – de ligger på Release nå.
         ])->columns(2);
     }
 }
