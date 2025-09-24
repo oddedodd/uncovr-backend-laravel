@@ -42,7 +42,11 @@ class PageForm
                 ->helperText('La stå tom for å generere automatisk.')
                 ->maxLength(255),
 
-            // NB: Ikke lenger cover/content her – de ligger på Release nå.
+            // 👉 NYTT: Page-nivå bakgrunnsfarge
+            Forms\Components\ColorPicker::make('background_color')
+                ->label('Page background')
+                ->nullable()
+                ->helperText('Denne arves av blokker som ikke har egen bakgrunn.'),
         ])->columns(2);
     }
 }
