@@ -1,61 +1,124 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Uncovr API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based API platform for managing music artists, releases, and interactive content pages. Built with Laravel 12, Filament admin panel, and role-based access control.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 🎵 Music Management
+- **Artist Profiles**: Create and manage artist profiles with bios, links, and user associations
+- **Release Management**: Handle music releases with cover images, rich content, and publication controls
+- **Interactive Pages**: Create custom pages for releases with background colors and block-based content
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🔐 Authentication & Authorization
+- **Laravel Sanctum**: Token-based API authentication
+- **Role-Based Access Control**: Three user roles (admin, label, artist) with different permissions
+- **Policy Protection**: Secure access to resources based on ownership and roles
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 🎛️ Admin Panel
+- **Filament v4**: Modern admin interface for content management
+- **Role-Based Views**: Artists see only their own content, admins see everything
+- **Rich Content Editing**: File uploads, rich text editors, and image management
 
-## Learning Laravel
+### 🌐 Public API
+- **Public Endpoints**: Access published releases and pages without authentication
+- **Slug-Based URLs**: SEO-friendly URLs for releases and pages
+- **Artist-Specific Content**: Browse releases by artist
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## API Endpoints
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Public Endpoints (No Authentication Required)
+```
+GET /api/v1/releases                           # All published releases
+GET /api/v1/artists/{id}/releases/public       # Releases by artist
+GET /api/v1/releases/slug/{slug}               # Release by slug
+GET /api/v1/releases/slug/{slug}/pages         # Pages for a release
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Authenticated Endpoints (Requires Token)
+```
+POST /api/v1/auth/login                        # Login
+GET  /api/v1/me                                # Current user info
+POST /api/v1/auth/logout                       # Logout
 
-## Laravel Sponsors
+# Artist Management
+GET    /api/v1/artists                         # List artists
+POST   /api/v1/artists                         # Create artist
+GET    /api/v1/artists/{id}                    # Show artist
+PUT    /api/v1/artists/{id}                    # Update artist
+DELETE /api/v1/artists/{id}                    # Delete artist
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# Release Management
+GET    /api/v1/artists/{id}/releases           # List releases for artist
+POST   /api/v1/artists/{id}/releases           # Create release
+GET    /api/v1/releases/{id}                   # Show release
+PATCH  /api/v1/releases/{id}                   # Update release
+DELETE /api/v1/releases/{id}                   # Delete release
 
-### Premium Partners
+# Page Management
+GET    /api/v1/releases/{id}/pages             # List pages for release
+POST   /api/v1/releases/{id}/pages             # Create page
+GET    /api/v1/pages/{id}                      # Show page
+PATCH  /api/v1/pages/{id}                      # Update page
+DELETE /api/v1/pages/{id}                      # Delete page
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## User Roles
 
-## Contributing
+### Admin
+- Full access to all content
+- Can manage artists, releases, and pages
+- Access to admin panel at `/admin`
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Label
+- Can create and manage artists
+- Can manage releases for any artist
+- Access to admin panel at `/admin`
 
-## Code of Conduct
+### Artist
+- Can only manage their own artist profile
+- Can create and manage their own releases and pages
+- Access to admin panel at `/admin`
+- Dashboard endpoint: `/api/v1/artist/dashboard`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Tech Stack
 
-## Security Vulnerabilities
+- **Framework**: Laravel 12
+- **Admin Panel**: Filament v4
+- **Authentication**: Laravel Sanctum
+- **Authorization**: Spatie Laravel Permission
+- **Database**: SQLite (development), PostgreSQL (production)
+- **Frontend**: Laravel Breeze with Tailwind CSS
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Installation
+
+1. Clone the repository
+2. Install dependencies: `composer install`
+3. Copy environment file: `cp .env.example .env`
+4. Generate application key: `php artisan key:generate`
+5. Create database: `touch database/database.sqlite`
+6. Run migrations: `php artisan migrate`
+7. Seed roles: `php artisan db:seed --class=RolesSeeder`
+8. Link storage: `php artisan storage:link`
+
+## Development
+
+```bash
+# Start development server with all services
+composer run dev
+
+# Or start individual services
+php artisan serve          # Web server
+php artisan queue:listen   # Queue worker
+php artisan pail           # Log viewer
+npm run dev               # Vite dev server
+```
+
+## Testing
+
+```bash
+composer run test
+```
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
