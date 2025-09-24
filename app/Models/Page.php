@@ -9,17 +9,17 @@ class Page extends Model
 {
     use HasFactory;
 
-    // Allow Filament to mass-assign these:
     protected $fillable = [
         'release_id',
         'title',
         'slug',
-        'cover_image',
-        'content',
+        'background_color',
+        'blocks',
     ];
 
-    // (optional) if you prefer the “allow everything” approach:
-    // protected $guarded = [];
+    protected $casts = [
+        'blocks' => 'array', // JSON <-> array
+    ];
     
     public function release()
     {
