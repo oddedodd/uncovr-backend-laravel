@@ -25,4 +25,19 @@ class Page extends Model
     {
         return $this->belongsTo(Release::class);
     }
+
+    public function getBlocksWithResolvedBackgroundAttribute(): array
+    {
+        $pageBg = $this->background_color;
+        $blocks = $this->blocks ?? [];
+
+        return collect($blocks)->map(function ($block) use ($pageBg) {
+            // Filament Builder lagrer typisk struktur: ['type' => 'text', 'data' => [...]]
+            $data = $block['data'] ?? [];
+
+            $block['resolvedBackground'] = $data['background_color'] ?? $pageBg;
+
+            return $block;
+        })->values()->all();
+    }
 }
