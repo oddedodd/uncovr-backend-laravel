@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Artist extends Model
@@ -16,30 +18,54 @@ class Artist extends Model
         'bio',
         'links',
         'user_id',
+        'label_id',
     ];
 
     /**
-     * Relasjon: en artist har én bruker (konto).
+     * Relasjoner
      */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    public function label(): BelongsTo
+    {
+        return $this->belongsTo(Label::class);
+    }
+
+    public function releases(): HasMany
+    {
+        return $this->hasMany(Release::class);
+    }
+
     /**
-     * Boot-metode for å sikre unike slugs.
+     * Boot: generer unik slug og sett label_id automatisk for label-brukere.
      */
     protected static function boot()
     {
         parent::boot();
 
-        static::creating(function ($artist) {
+        static::creating(function (Artist $artist) {
+            // Slug (om tom)
             if (empty($artist->slug) && !empty($artist->name)) {
                 $artist->slug = static::generateUniqueSlug($artist->name);
             }
+
+            // Hvis innlogget bruker har rollen "label" og label_id ikke er satt,
+            // koble automatisk til labelen som eies av brukeren.
+            if (empty($artist->label_id) && auth()->check() && auth()->user()->hasRole('label')) {
+                $label = Label::query()
+                    ->where('owner_user_id', auth()->id())
+                    ->first();
+
+                if ($label) {
+                    $artist->label_id = $label->id;
+                }
+            }
         });
 
-        static::updating(function ($artist) {
+        static::updating(function (Artist $artist) {
             if (empty($artist->slug) && !empty($artist->name)) {
                 $artist->slug = static::generateUniqueSlug($artist->name, $artist->id);
             }
@@ -47,18 +73,20 @@ class Artist extends Model
     }
 
     /**
-     * Generer unike slugs basert på navn.
+     * Generer unik slug.
      */
     protected static function generateUniqueSlug(string $name, $ignoreId = null): string
     {
         $slug = Str::slug($name);
-        $original = $slug;
-
+        $base = $slug;
         $i = 1;
-        while (static::where('slug', $slug)
-            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
-            ->exists()) {
-            $slug = $original . '-' . $i++;
+
+        while (
+            static::where('slug', $slug)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = $base . '-' . $i++;
         }
 
         return $slug;
