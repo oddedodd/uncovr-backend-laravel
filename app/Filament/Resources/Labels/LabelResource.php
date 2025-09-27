@@ -6,9 +6,10 @@ use App\Filament\Resources\Labels\Pages\CreateLabel;
 use App\Filament\Resources\Labels\Pages\EditLabel;
 use App\Filament\Resources\Labels\Pages\ListLabels;
 use App\Models\Label;
-use App\Models\User;
 use BackedEnum;
 use Filament\Forms;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -16,66 +17,93 @@ use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class LabelResource extends Resource
 {
     protected static ?string $model = Label::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    // v4: må være string|\UnitEnum|null
-    protected static string|\UnitEnum|null $navigationGroup = 'Content';
+    protected static \UnitEnum|string|null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 5;
     protected static ?string $navigationLabel = 'Labels';
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    // v4-signatur: Schema
+    /**
+     * Meny: kun admin ser "Labels".
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('admin');
+    }
+
+    /**
+     * Tilganger: kun admin kan liste/opprette/endre/slette/lese Labels.
+     */
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('admin');
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('admin');
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('admin');
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('admin');
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->check() && auth()->user()->hasRole('admin');
+    }
+
     public static function form(Schema $schema): Schema
     {
-        $isAdmin = fn () => auth()->user()?->hasRole('admin');
-
         return $schema->schema([
-            Forms\Components\TextInput::make('name')
-                ->label('Name')
-                ->required()
-                ->maxLength(255),
+            Section::make('Label')
+                ->schema([
+                    TextInput::make('name')
+                        ->label('Label name')
+                        ->required()
+                        ->maxLength(255)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function ($state, callable $set, $get) {
+                            if (blank($get('slug')) && filled($state)) {
+                                $set('slug', Str::slug($state));
+                            }
+                        }),
 
-            Forms\Components\TextInput::make('slug')
-                ->label('Slug')
-                ->helperText('La stå tom for å generere automatisk.')
-                ->maxLength(255),
+                    TextInput::make('slug')
+                        ->label('Slug')
+                        ->helperText('La stå tom for å generere automatisk.')
+                        ->maxLength(255)
+                        ->unique(ignoreRecord: true),
 
-            // Eier-info (ny bruker opprettes på Create, oppdateres på Edit)
-            Forms\Components\TextInput::make('owner_name')
-                ->label('Owner name')
-                ->maxLength(255)
-                ->required($isAdmin)
-                ->visible($isAdmin)
-                ->dehydrated(), // sendes til Page
+                    // Epost/passord for å automatisk opprette label-bruker (owner)
+                    TextInput::make('owner_email')
+                        ->label('Owner email')
+                        ->email()
+                        ->required()
+                        ->dehydrated(),
 
-            Forms\Components\TextInput::make('owner_email')
-                ->label('Owner email')
-                ->email()
-                ->required($isAdmin)
-                ->visible($isAdmin)
-                ->dehydrated()
-                ->rule(function (?Label $record) {
-                    // unik email i users-tabellen; ignorer nåværende eier ved redigering
-                    $ignoreUserId = $record?->owner_user_id;
-                    return Rule::unique('users', 'email')->ignore($ignoreUserId);
-                }),
-
-            Forms\Components\TextInput::make('owner_password')
-                ->label('Owner password')
-                ->password()
-                ->revealable()
-                ->visible($isAdmin)
-                ->dehydrated()
-                ->required(fn ($record) => $record === null && auth()->user()?->hasRole('admin'))
-                ->helperText('La stå tom ved redigering for å beholde dagens passord.'),
+                    TextInput::make('owner_password')
+                        ->label('Owner password')
+                        ->password()
+                        ->revealable()
+                        ->required()
+                        ->dehydrated(),
+                ])
+                ->columns(2),
         ])->columns(2);
     }
 
@@ -83,83 +111,35 @@ class LabelResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->label('Name')
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('slug')
-                    ->label('Slug')
-                    ->toggleable()
-                    ->copyable()
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('owner.name')
-                    ->label('Owner')
-                    ->sortable()
-                    ->toggleable(),
-
+                TextColumn::make('name')->sortable()->searchable(),
+                TextColumn::make('slug')->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('artists_count')
-                    ->label('Artists')
                     ->counts('artists')
+                    ->label('Artists')
                     ->sortable(),
             ])
-            // Raden er klikkbar → Edit (unngår Action-klasser)
-            ->recordUrl(fn ($record) => static::getUrl('edit', ['record' => $record]))
-            ->actions([])
-            ->bulkActions([]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [];
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]);
     }
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-        $user  = auth()->user();
-
-        if (! $user) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        if ($user->hasRole('admin')) {
-            return $query;
-        }
-
-        if ($user->hasRole('label')) {
-            return $query->where('owner_user_id', $user->id);
-        }
-
-        return $query->whereRaw('1 = 0');
-    }
-
-    // Slug fallback – Create
-    public static function mutateFormDataBeforeCreate(array $data): array
-    {
-        if (empty($data['slug'] ?? '') && !empty($data['name'] ?? '')) {
-            $data['slug'] = Str::slug($data['name']);
-        }
-        return $data;
-    }
-
-    // Slug fallback – Save
-    public static function mutateFormDataBeforeSave(array $data): array
-    {
-        if (empty($data['slug'] ?? '') && !empty($data['name'] ?? '')) {
-            $data['slug'] = Str::slug($data['name']);
-        }
-        return $data;
+        // Admin ser alt. (Label/Artist har uansett ikke tilgang pga canViewAny / navigation)
+        return parent::getEloquentQuery();
     }
 
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListLabels::route('/'),
-            'create' => Pages\CreateLabel::route('/create'),
-            'edit'   => Pages\EditLabel::route('/{record}/edit'),
+            'index'  => ListLabels::route('/'),
+            'create' => CreateLabel::route('/create'),
+            'edit'   => EditLabel::route('/{record}/edit'),
         ];
     }
 }

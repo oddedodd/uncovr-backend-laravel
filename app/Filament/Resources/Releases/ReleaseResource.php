@@ -57,39 +57,31 @@ class ReleaseResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-        $user  = auth()->user();
 
-        if (!$user) {
+        $user = auth()->user();
+
+        if (! $user) {
             return $query->whereRaw('1 = 0');
         }
 
+        // Admin ser alt
         if ($user->hasRole('admin')) {
             return $query;
         }
 
-        if ($user->hasRole('label')) {
-            $labelId = Label::where('owner_user_id', $user->id)->value('id');
-
-            if ($labelId) {
-                return $query->whereHas('artist', fn (Builder $q) => $q->where('label_id', $labelId));
-            }
-
-            // Ingen label tilknyttet brukeren -> vis ingenting
-            return $query->whereRaw('1 = 0');
-        }
-
+        // Artist: kun releases for artist som eies av innlogget bruker
         if ($user->hasRole('artist')) {
-            $artistId = Artist::where('user_id', $user->id)->value('id');
-
-            if ($artistId) {
-                return $query->where('artist_id', $artistId);
-            }
-
-            // Ingen artist tilknyttet brukeren -> vis ingenting
-            return $query->whereRaw('1 = 0');
+            return $query->whereHas('artist', fn ($q) => $q->where('user_id', $user->id));
         }
 
-        // Andre roller -> ingenting
+        // Label: kun releases for artister under label som eies av innlogget bruker
+        if ($user->hasRole('label')) {
+            return $query->whereHas('artist', function ($q) use ($user) {
+                $q->whereHas('label', fn ($lq) => $lq->where('owner_user_id', $user->id));
+            });
+        }
+
+        // Andre roller: ingenting
         return $query->whereRaw('1 = 0');
     }
 
@@ -127,5 +119,35 @@ class ReleaseResource extends Resource
             'create' => CreateRelease::route('/create'),
             'edit'   => EditRelease::route('/{record}/edit'),
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label', 'artist']);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label', 'artist']);
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label', 'artist']);
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label', 'artist']);
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label', 'artist']);
+    }
+
+    public static function canView($record): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label', 'artist']);
     }
 }

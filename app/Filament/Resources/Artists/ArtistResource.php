@@ -6,12 +6,12 @@ use App\Filament\Resources\Artists\Pages\CreateArtist;
 use App\Filament\Resources\Artists\Pages\EditArtist;
 use App\Filament\Resources\Artists\Pages\ListArtists;
 use App\Filament\Resources\Artists\Schemas\ArtistForm;
-// use App\Filament\Resources\Artists\Tables\ArtistsTable; // ikke brukt i denne filen
 use App\Models\Artist;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,27 +22,49 @@ class ArtistResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
-    // v4: tillatt type for navigationGroup
     protected static \UnitEnum|string|null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 10;
     protected static ?string $navigationLabel = 'Artists';
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    // Meny/tilgang – kun admin og label
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label']);
+    }
+    public static function canViewAny(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label']);
+    }
+    public static function canCreate(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label']);
+    }
+    public static function canEdit($record): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label']);
+    }
+    public static function canDelete($record): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label']);
+    }
+    public static function canView($record): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin', 'label']);
+    }
+
+    // Rollefilter: label ser egne artister, admin ser alt, artist ser ingen
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
 
-        // Artist-rolle: kun sin egen artist
         if (auth()->check() && auth()->user()->hasRole('artist')) {
-            $query->where('user_id', auth()->id());
+            return $query->whereRaw('1=0');
         }
 
-        // Label-rolle: kun artister som tilhører label eid av innlogget bruker
         if (auth()->check() && auth()->user()->hasRole('label')) {
-            $query->whereHas('label', function ($q) {
-                $q->where('owner_user_id', auth()->id());
-            });
+            $query->whereHas('label', fn ($q) => $q->where('owner_user_id', auth()->id()));
         }
 
         return $query;
@@ -50,7 +72,6 @@ class ArtistResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        // Skjema defineres i egen klasse
         return ArtistForm::configure($schema);
     }
 
@@ -58,8 +79,11 @@ class ArtistResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->sortable()->searchable(),
-                TextColumn::make('slug')->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('name')
+                    ->sortable()
+                    ->searchable(),
+                TextColumn::make('slug')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('label.name')
                     ->label('Label')
                     ->sortable()
@@ -70,11 +94,12 @@ class ArtistResource extends Resource
                     ->label('Releases')
                     ->sortable(),
             ])
-            // Gjør rad klikkbar til Edit i stedet for å bruke EditAction
+            // Gjør radene klikkbare til edit, så slipper vi EditAction-klassen
             ->recordUrl(fn ($record) => static::getUrl('edit', ['record' => $record]))
-            // Ingen rad- eller bulk-actions (unngår EditAction / DeleteAction klasser)
+            ->paginated(true)
+            // Ingen per-rad actions (for å unngå EditAction-klassen i ditt miljø)
             ->actions([])
-            ->bulkActions([]);
+            ->bulkActions([]); // kan slå på senere når vi vil
     }
 
     public static function getPages(): array
