@@ -5,8 +5,9 @@ A Laravel-based API platform for managing music artists, releases, and interacti
 ## Features
 
 ### 🎵 Music Management
-- **Artist Profiles**: Create and manage artist profiles with bios, links, and user associations
-- **Release Management**: Handle music releases with cover images, rich content, and publication controls
+- **Label Management**: Create and manage record labels with owner associations
+- **Artist Profiles**: Create and manage artist profiles with bios, links, and label associations
+- **Release Management**: Handle music releases with types (single/EP/album), status (draft/published), cover images, rich content, Spotify URLs, and publication controls
 - **Interactive Pages**: Create custom pages for releases with background colors and block-based content
 
 ### 🔐 Authentication & Authorization
@@ -16,13 +17,16 @@ A Laravel-based API platform for managing music artists, releases, and interacti
 
 ### 🎛️ Admin Panel
 - **Filament v4**: Modern admin interface for content management
-- **Role-Based Views**: Artists see only their own content, admins see everything
+- **Role-Based Views**: Artists see only their own content, labels see their artists, admins see everything
 - **Rich Content Editing**: File uploads, rich text editors, and image management
+- **Label Management**: Admin-only interface for managing record labels
 
 ### 🌐 Public API
 - **Public Endpoints**: Access published releases and pages without authentication
 - **Slug-Based URLs**: SEO-friendly URLs for releases and pages
 - **Artist-Specific Content**: Browse releases by artist
+- **Release Types**: Support for singles, EPs, and albums
+- **Spotify Integration**: Direct links to Spotify albums, playlists, and tracks
 
 ## API Endpoints
 
@@ -39,6 +43,13 @@ GET /api/v1/releases/slug/{slug}/pages         # Pages for a release
 POST /api/v1/auth/login                        # Login
 GET  /api/v1/me                                # Current user info
 POST /api/v1/auth/logout                       # Logout
+
+# Label Management (Admin only)
+GET    /api/v1/labels                          # List labels
+POST   /api/v1/labels                          # Create label
+GET    /api/v1/labels/{id}                     # Show label
+PUT    /api/v1/labels/{id}                     # Update label
+DELETE /api/v1/labels/{id}                     # Delete label
 
 # Artist Management
 GET    /api/v1/artists                         # List artists
@@ -70,8 +81,9 @@ DELETE /api/v1/pages/{id}                      # Delete page
 - Access to admin panel at `/admin`
 
 ### Label
-- Can create and manage artists
-- Can manage releases for any artist
+- Can create and manage their own label
+- Can create and manage artists under their label
+- Can manage releases for artists under their label
 - Access to admin panel at `/admin`
 
 ### Artist
