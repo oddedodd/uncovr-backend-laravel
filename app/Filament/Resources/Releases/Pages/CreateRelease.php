@@ -6,24 +6,28 @@ use App\Filament\Resources\Releases\ReleaseResource;
 use App\Models\Artist;
 use App\Models\Release;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Enums\Width;   // 👈 viktig import
 use Illuminate\Support\Str;
 
 class CreateRelease extends CreateRecord
 {
     protected static string $resource = ReleaseResource::class;
 
+    // 👇 Full bredde (metode, ikke property)
+    public function getMaxContentWidth(): Width|string|null
+    {
+        return Width::Full;
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Sikre at artist_id tilhører innlogget artist (dersom bruker er artist)
         if (auth()->user()?->hasRole('artist')) {
             $myArtistId = Artist::where('user_id', auth()->id())->value('id');
-            // Sett automatisk hvis ikke satt, eller overstyr til egen
-            if (empty($data['artist_id']) || (int)$data['artist_id'] !== (int)$myArtistId) {
+            if (empty($data['artist_id']) || (int) $data['artist_id'] !== (int) $myArtistId) {
                 $data['artist_id'] = $myArtistId;
             }
         }
 
-        // Slug (globalt unik for releases)
         $base = !empty($data['slug'] ?? '')
             ? Str::slug((string) $data['slug'])
             : Str::slug((string) ($data['title'] ?? ''));
@@ -38,7 +42,6 @@ class CreateRelease extends CreateRecord
 
         $data['slug'] = $slug;
 
-        // published_at ut fra status
         $status = $data['status'] ?? 'draft';
         $data['published_at'] = $status === 'published' ? now() : null;
 
