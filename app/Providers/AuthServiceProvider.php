@@ -9,6 +9,7 @@ use App\Policies\ArtistPolicy;
 use App\Policies\ReleasePolicy;
 use App\Policies\PagePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -29,5 +30,10 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerPolicies();
+
+        // 👇 Sørg for at admin alltid har tilgang, uansett policy
+        Gate::before(function ($user, string $ability) {
+            return $user->hasRole('admin') ? true : null;
+        });
     }
 }

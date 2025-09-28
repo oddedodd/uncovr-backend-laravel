@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Artist;
 use App\Models\Release;
 use App\Models\User;
 
@@ -14,8 +15,17 @@ class ReleasePolicy
 
     public function view(User $user, Release $release): bool
     {
-        if ($user->hasRole('admin') || $user->hasRole('label')) return true;
-        return $user->hasRole('artist') && $release->artist?->user_id === $user->id;
+        if ($user->hasRole('admin')) return true;
+
+        if ($user->hasRole('label')) {
+            return optional($release->artist->label)->owner_user_id === $user->id;
+        }
+
+        if ($user->hasRole('artist')) {
+            return $release->artist?->user_id === $user->id;
+        }
+
+        return false;
     }
 
     public function create(User $user): bool
@@ -25,12 +35,11 @@ class ReleasePolicy
 
     public function update(User $user, Release $release): bool
     {
-        if ($user->hasRole('admin') || $user->hasRole('label')) return true;
-        return $user->hasRole('artist') && $release->artist?->user_id === $user->id;
+        return $this->view($user, $release);
     }
 
     public function delete(User $user, Release $release): bool
     {
-        return $this->update($user, $release);
+        return $this->view($user, $release);
     }
 }

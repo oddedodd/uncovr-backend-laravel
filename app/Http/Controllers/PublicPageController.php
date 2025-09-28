@@ -1,23 +1,25 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Controller;
+use App\Http\Resources\PageResource;
 use App\Models\Release;
-use App\Models\Page;
 
 class PublicPageController extends Controller
 {
-    public function byReleaseSlug(string $slug)
+    // GET /api/v1/releases/{release:slug}/pages
+    public function byReleaseSlug(Release $release)
     {
-        $release = Release::where('slug',$slug)
-            ->where('status','published')
-            ->firstOrFail();
+        // Bare publiserte releases
+        abort_unless($release->status === 'published', 404);
 
-        return response()->json(
-            Page::where('release_id', $release->id)
-                ->where('status','published')
-                ->orderBy('position')
-                ->get()
-        );
+        // Hent sider + blocks i riktig rekkefølge
+        $release->load([
+            'pages' => fn ($q) => $q->orderBy('position'),
+            'pages.blocks' => fn ($q) => $q->orderBy('position'),
+        ]);
+
+        return PageResource::collection($release->pages);
     }
 }
