@@ -7,10 +7,9 @@ use App\Filament\Resources\Labels\Pages\EditLabel;
 use App\Filament\Resources\Labels\Pages\ListLabels;
 use App\Models\Label;
 use BackedEnum;
-use Filament\Forms;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
@@ -31,17 +30,11 @@ class LabelResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    /**
-     * Meny: kun admin ser "Labels".
-     */
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->check() && auth()->user()->hasRole('admin');
     }
 
-    /**
-     * Tilganger: kun admin kan liste/opprette/endre/slette/lese Labels.
-     */
     public static function canViewAny(): bool
     {
         return auth()->check() && auth()->user()->hasRole('admin');
@@ -70,7 +63,7 @@ class LabelResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Section::make('Label')
+            Group::make()
                 ->schema([
                     TextInput::make('name')
                         ->label('Label name')
@@ -89,22 +82,39 @@ class LabelResource extends Resource
                         ->maxLength(255)
                         ->unique(ignoreRecord: true),
 
-                    // Epost/passord for å automatisk opprette label-bruker (owner)
+                    // Eiernavn – vis eksisterende ved redigering
+                    TextInput::make('owner_name')
+                        ->label('Owner name')
+                        ->required(fn ($record) => $record === null) // kun required ved opprettelse
+                        ->afterStateHydrated(function ($component, ?Label $record) {
+                            $component->state($record?->owner?->name);
+                        })
+                        ->dehydrated(), // tas med i $data (Create/ Edit)
+
+                    // Epost – vis eksisterende ved redigering
                     TextInput::make('owner_email')
                         ->label('Owner email')
                         ->email()
-                        ->required()
+                        ->required(fn ($record) => $record === null)
+                        ->afterStateHydrated(function ($component, ?Label $record) {
+                            $component->state($record?->owner?->email);
+                        })
                         ->dehydrated(),
 
+                    // Passord – ikke forhåndsutfylt; kun brukt hvis satt
                     TextInput::make('owner_password')
                         ->label('Owner password')
                         ->password()
                         ->revealable()
-                        ->required()
-                        ->dehydrated(),
+                        ->required(fn ($record) => $record === null)
+                        ->afterStateHydrated(function ($component) {
+                            $component->state(null); // aldri vis lagret passord
+                        })
+                        ->dehydrated(fn ($state) => filled($state)), // bare med hvis utfylt
                 ])
-                ->columns(2),
-        ])->columns(2);
+                ->columns(2)
+                ->columnSpanFull(),
+        ])->columns(1);
     }
 
     public static function table(Table $table): Table
@@ -118,19 +128,12 @@ class LabelResource extends Resource
                     ->label('Artists')
                     ->sortable(),
             ])
-            ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]);
+            // Klikkbar rad til edit – ingen Actions-klasser.
+            ->recordUrl(fn ($record) => self::getUrl('edit', ['record' => $record]));
     }
 
     public static function getEloquentQuery(): Builder
     {
-        // Admin ser alt. (Label/Artist har uansett ikke tilgang pga canViewAny / navigation)
         return parent::getEloquentQuery();
     }
 

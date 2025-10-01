@@ -22,6 +22,20 @@ class Label extends Model
     }
 
     /**
+     * Praktiske read-only felt (tilgjengelig som $label->owner_name / owner_email).
+     * NB: Disse endrer ikke relasjonen; de er kun "gettere".
+     */
+    public function getOwnerNameAttribute(): ?string
+    {
+        return $this->owner?->name;
+    }
+
+    public function getOwnerEmailAttribute(): ?string
+    {
+        return $this->owner?->email;
+    }
+
+    /**
      * Boot-metode for å generere unike slugs automatisk.
      */
     protected static function boot()
@@ -29,13 +43,13 @@ class Label extends Model
         parent::boot();
 
         static::creating(function ($label) {
-            if (empty($label->slug) && !empty($label->name)) {
+            if (empty($label->slug) && ! empty($label->name)) {
                 $label->slug = static::generateUniqueSlug($label->name);
             }
         });
 
         static::updating(function ($label) {
-            if (empty($label->slug) && !empty($label->name)) {
+            if (empty($label->slug) && ! empty($label->name)) {
                 $label->slug = static::generateUniqueSlug($label->name, $label->id);
             }
         });
@@ -50,9 +64,11 @@ class Label extends Model
         $original = $slug;
 
         $i = 1;
-        while (static::where('slug', $slug)
-            ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
-            ->exists()) {
+        while (
+            static::where('slug', $slug)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
             $slug = $original . '-' . $i++;
         }
 
