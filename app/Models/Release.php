@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Release extends Model
 {
@@ -75,9 +76,25 @@ class Release extends Model
         });
     }
 
-    // (valgfritt) hjelpescope
+    // Kun publiserte releaser
     public function scopePublished($query)
     {
         return $query->where('status', 'published');
+        // Evt. også tid:
+        // ->whereNotNull('published_at')->where('published_at', '<=', now());
     }
+
+    // Full URL til cover-bildet (for API / app)
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        return $this->cover_image
+            ? Storage::disk('public')->url($this->cover_image)
+            : null;
+    }
+
+    // (valgfritt) bruk slug i route-model-binding senere om ønskelig
+    // public function getRouteKeyName(): string
+    // {
+    //     return 'slug';
+    // }
 }
