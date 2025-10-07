@@ -4,11 +4,13 @@ namespace App\Filament\Resources\Pages\Schemas;
 
 use App\Filament\Blocks\PageBlocks;
 use App\Models\Release;
+use App\Models\Page;
 use Filament\Forms;
 use Filament\Forms\Components\Builder;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rule;
 
 class PageForm
 {
@@ -45,6 +47,36 @@ class PageForm
                 ->label('Slug')
                 ->helperText('La stå tom for å generere automatisk.')
                 ->maxLength(255),
+
+            // Posisjon (unik per release)
+            TextInput::make('position')
+                ->label('Position')
+                ->numeric()
+                ->minValue(1)
+                ->default(function (callable $get) {
+                    $releaseId = $get('release_id');
+                    if (! $releaseId) {
+                        return null;
+                    }
+
+                    $last = Page::where('release_id', $releaseId)->max('position') ?? 0;
+                    return $last + 1;
+                })
+                ->rules(function (callable $get) {
+                    $releaseId = $get('release_id');
+                    // Ignorer nåværende record ved edit (Filament legger {record} i route)
+                    $currentId = request()->route('record');
+
+                    $rule = Rule::unique('pages', 'position')
+                        ->where(fn ($q) => $q->where('release_id', $releaseId));
+
+                    if ($currentId) {
+                        $rule = $rule->ignore($currentId);
+                    }
+
+                    return ['integer', 'min:1', $rule];
+                })
+                ->helperText('Unik per release. Lavere tall vises først.'),
 
             // Page-nivå bakgrunn (arves ned til blokker uten egen farge)
             ColorPicker::make('background_color')

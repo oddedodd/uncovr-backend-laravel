@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Page extends Model
 {
@@ -16,40 +15,46 @@ class Page extends Model
         'slug',
         'background_color',
         'blocks',
+        'position',      // 👈 pass på at position er fillable
+        'status',
+        'page_type',
+        'meta',
     ];
 
     protected $casts = [
-        'blocks' => 'array',          // JSON <-> array
-        'title'  => 'string',
-        'slug'   => 'string',
-        'background_color' => 'string',
+        'blocks' => 'array',
+        'meta'   => 'array',
     ];
 
-    public function release(): BelongsTo
+    public function release()
     {
         return $this->belongsTo(Release::class);
     }
 
-    /**
-     * Hvis du senere vil sortere sider, kan du bytte til en 'position' kolonne
-     * og oppdatere scope'et under. For nå lar vi den bare sortere på id.
-     */
-    public function scopeOrdered($query)
+    // Standard sortering på position
+    protected $table = 'pages';
+
+    protected static function booted(): void
     {
-        return $query->orderBy('id');
+        // Sett position automatisk hvis tom
+        static::creating(function (self $page) {
+            if (empty($page->position)) {
+                $page->position = (int) static::where('release_id', $page->release_id)->max('position') + 1;
+            }
+        });
     }
 
-    /**
-     * Hjelpe-attributt: hver blokk får en 'resolvedBackground' der blokkas egen
-     * farge (om satt) vinner, ellers faller den tilbake til sidens background_color.
-     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('position');
+    }
+
     public function getBlocksWithResolvedBackgroundAttribute(): array
     {
         $pageBg = $this->background_color;
         $blocks = $this->blocks ?? [];
 
         return collect($blocks)->map(function ($block) use ($pageBg) {
-            // Builder-form: ['type' => '...', 'data' => [...]]
             $data = $block['data'] ?? [];
             $block['resolvedBackground'] = $data['background_color'] ?? $pageBg;
             return $block;

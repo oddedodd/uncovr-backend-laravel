@@ -22,7 +22,7 @@ class PageResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
-    // 👇 v4: må være string|\UnitEnum|null
+    // v4: må være string|\UnitEnum|null
     protected static string|\UnitEnum|null $navigationGroup = 'Content';
     protected static ?int $navigationSort = 30;
     protected static ?string $navigationLabel = 'Pages';
@@ -31,14 +31,20 @@ class PageResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        // Skjema-oppsett ligger i egen klasse generert av v4 (behold den)
+        // Skjema-oppsett i egen klasse
         return PageForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        // Tabell-oppsett ligger i egen klasse generert av v4 (behold den)
-        return PagesTable::configure($table);
+        // Grunnoppsett i egen klasse
+        $table = PagesTable::configure($table);
+
+        // Etterkonfigurer for manuell rekkefølge:
+        return $table
+            ->reorderable('position')   // dra-og-slipp lagres til kolonnen "position"
+            ->defaultSort('position')   // vis i riktig rekkefølge
+            ->paginated(false);         // vis alt for enkel sorting
     }
 
     public static function getRelations(): array
@@ -58,7 +64,7 @@ class PageResource extends Resource
         return $query;
     }
 
-    // 🪄 (Valgfritt) Auto-slug + posisjon-siste
+    // 🪄 Auto-slug + legg på neste ledige "position" ved create
     public static function mutateFormDataBeforeCreate(array $data): array
     {
         if (empty($data['slug'] ?? '') && !empty($data['title'] ?? '')) {
