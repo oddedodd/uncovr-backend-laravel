@@ -36,7 +36,7 @@ class Page extends Model
 
     protected static function booted(): void
     {
-        // Sett position automatisk hvis tom
+        // Sett position automatisk hvis tom - per release
         static::creating(function (self $page) {
             if (empty($page->position)) {
                 $page->position = (int) static::where('release_id', $page->release_id)->max('position') + 1;
@@ -48,6 +48,7 @@ class Page extends Model
     {
         return $query->orderBy('position');
     }
+
 
     public function getBlocksWithResolvedBackgroundAttribute(): array
     {
