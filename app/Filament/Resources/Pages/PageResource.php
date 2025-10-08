@@ -27,6 +27,11 @@ class PageResource extends Resource
     protected static ?int $navigationSort = 30;
     protected static ?string $navigationLabel = 'Pages';
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false; // Pages are now managed via Release relation manager
+    }
+
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function form(Schema $schema): Schema
