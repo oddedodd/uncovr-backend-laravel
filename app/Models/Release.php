@@ -46,7 +46,7 @@ class Release extends Model
 
     public function pages()
     {
-        return $this->hasMany(Page::class)->orderBy('position');
+        return $this->hasMany(Page::class);
     }
 
     // (valgfritt) litt sikkerhet: normaliser og begrens verdier

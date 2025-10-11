@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Releases;
 use App\Filament\Resources\Releases\Pages\CreateRelease;
 use App\Filament\Resources\Releases\Pages\EditRelease;
 use App\Filament\Resources\Releases\Pages\ListReleases;
+use App\Filament\Resources\Releases\RelationManagers\PagesRelationManager;
 use App\Filament\Resources\Releases\Schemas\ReleaseForm;
 use App\Filament\Resources\Releases\Tables\ReleasesTable;
 use App\Models\Artist;
@@ -45,7 +46,9 @@ class ReleaseResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            PagesRelationManager::class,
+        ];
     }
 
     /**
