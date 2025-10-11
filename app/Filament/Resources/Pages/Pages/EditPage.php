@@ -25,4 +25,11 @@ class EditPage extends EditRecord
 
         return $data; // ← keep all fields
     }
+
+    protected function getRedirectUrl(): string
+    {
+        // Redirect back to the release edit page after saving
+        $releaseId = $this->record->release_id;
+        return route('filament.admin.resources.releases.edit', ['record' => $releaseId]);
+    }
 }

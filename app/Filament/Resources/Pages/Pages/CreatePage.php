@@ -10,6 +10,14 @@ class CreatePage extends CreateRecord
 {
     protected static string $resource = PageResource::class;
 
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        // Pre-fill release_id from query parameter if present
+        $data['release_id'] = request()->query('release_id', $data['release_id'] ?? null);
+        
+        return $data;
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // Generate slug if empty, but keep all other fields intact
@@ -25,6 +33,13 @@ class CreatePage extends CreateRecord
             }
         }
 
-        return $data; // ← don’t drop cover_image or content
+        return $data; // ← don't drop cover_image or content
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        // Redirect back to the release edit page after creating
+        $releaseId = $this->record->release_id;
+        return route('filament.admin.resources.releases.edit', ['record' => $releaseId]);
     }
 }

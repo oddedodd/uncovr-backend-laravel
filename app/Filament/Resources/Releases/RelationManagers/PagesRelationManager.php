@@ -64,7 +64,10 @@ class PagesRelationManager extends RelationManager
                 //
             ])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->url(fn (): string => route('filament.admin.resources.pages.create', [
+                        'release_id' => $this->getOwnerRecord()->id
+                    ])),
             ])
             ->actions([
                 Action::make('move_up')
@@ -85,7 +88,8 @@ class PagesRelationManager extends RelationManager
                     })
                     ->visible(fn (Page $record) => $this->canMoveDown($record)),
                 
-                EditAction::make(),
+                EditAction::make()
+                    ->url(fn (Page $record): string => route('filament.admin.resources.pages.edit', ['record' => $record])),
                 DeleteAction::make(),
             ])
             ->bulkActions([
