@@ -25,7 +25,7 @@ class PublicReleaseController extends Controller
 
         $query = Release::query()
             ->published()
-            ->with(['artist:id,name,slug']) // valgfritt, hyggelig for klienten
+            ->with(['artist:id,name,slug,artist_image']) // valgfritt, hyggelig for klienten
             ->when(
                 $request->filled('artist_id'),
                 fn ($q) => $q->where('artist_id', (int) $request->query('artist_id'))
@@ -52,7 +52,7 @@ class PublicReleaseController extends Controller
         $releases = Release::query()
             ->where('artist_id', $artist->id)
             ->published()
-            ->with(['artist:id,name,slug'])
+            ->with(['artist:id,name,slug,artist_image'])
             ->orderByDesc('release_date')
             ->orderByDesc('created_at')
             ->paginate(20);
@@ -66,7 +66,7 @@ class PublicReleaseController extends Controller
         $release = Release::query()
             ->published()
             ->where('slug', $slug)
-            ->with(['artist:id,name,slug'])
+            ->with(['artist:id,name,slug,artist_image'])
             ->firstOrFail();
 
         return new ReleaseResource($release);
