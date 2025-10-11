@@ -11,8 +11,8 @@ class RolesSeeder extends Seeder
 {
     public function run(): void
     {
-        // Lag tre roller
-        $roles = ['admin', 'label', 'artist'];
+        // Lag fire roller - inkluderer 'user' for app-brukere
+        $roles = ['admin', 'label', 'artist', 'user'];
         foreach ($roles as $r) {
             Role::firstOrCreate(['name' => $r]);
         }
