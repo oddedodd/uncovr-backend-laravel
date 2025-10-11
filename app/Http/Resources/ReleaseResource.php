@@ -29,10 +29,22 @@ class ReleaseResource extends JsonResource
         return [
             'id'           => $this->id,
             'artist'       => $this->whenLoaded('artist', function () {
+                // Artist image: full URL if exists
+                $artistImageUrl = null;
+                if ($this->artist?->artist_image) {
+                    try {
+                        $storageUrl = Storage::disk('public')->url($this->artist->artist_image);
+                        $artistImageUrl = url($storageUrl);
+                    } catch (\Throwable $e) {
+                        $artistImageUrl = $this->artist->artist_image;
+                    }
+                }
+                
                 return [
-                    'id'   => $this->artist?->id,
-                    'name' => $this->artist?->name,
-                    'slug' => $this->artist?->slug,
+                    'id'           => $this->artist?->id,
+                    'name'         => $this->artist?->name,
+                    'slug'         => $this->artist?->slug,
+                    'artist_image' => $artistImageUrl,
                 ];
             }),
             'title'        => $this->title,

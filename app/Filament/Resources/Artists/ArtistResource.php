@@ -14,6 +14,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Illuminate\Database\Eloquent\Builder;
 
 class ArtistResource extends Resource
@@ -79,6 +80,12 @@ class ArtistResource extends Resource
     {
         return $table
             ->columns([
+                ImageColumn::make('artist_image')
+                    ->label('Image')
+                    ->disk('public')
+                    ->circular()
+                    ->defaultImageUrl(url('/images/default-avatar.png'))
+                    ->toggleable(),
                 TextColumn::make('name')
                     ->sortable()
                     ->searchable(),
