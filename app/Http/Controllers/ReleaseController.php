@@ -19,7 +19,7 @@ class ReleaseController extends Controller
         }
 
         $releases = Release::where('artist_id', $artist->id)
-            ->with(['artist:id,name,slug'])
+            ->with(['artist:id,name,slug,artist_image'])
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -59,7 +59,7 @@ class ReleaseController extends Controller
 
         $data['artist_id'] = $artist->id;
 
-        $release = Release::create($data)->load(['artist:id,name,slug']);
+        $release = Release::create($data)->load(['artist:id,name,slug,artist_image']);
 
         return (new ReleaseResource($release))
             ->response()
@@ -70,7 +70,7 @@ class ReleaseController extends Controller
     {
         $this->authorize('view', $release);
 
-        $release->load(['artist:id,name,slug']);
+        $release->load(['artist:id,name,slug,artist_image']);
 
         return new ReleaseResource($release);
     }
@@ -97,7 +97,7 @@ class ReleaseController extends Controller
 
         $release->update($data);
 
-        return new ReleaseResource($release->fresh()->load(['artist:id,name,slug']));
+        return new ReleaseResource($release->fresh()->load(['artist:id,name,slug,artist_image']));
     }
 
     public function destroy(Request $request, Release $release)
