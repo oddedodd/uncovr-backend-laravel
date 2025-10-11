@@ -25,6 +25,11 @@ class CreatePage extends CreateRecord
             $data['slug'] = Str::slug($data['title']);
         }
 
+        // Handle published_at based on status
+        if (array_key_exists('status', $data)) {
+            $data['published_at'] = $data['status'] === 'published' ? now() : null;
+        }
+
         // (Optional) ownership guard – ensure selected release belongs to this artist
         if (auth()->user()?->hasRole('artist')) {
             if (! optional(\App\Models\Release::find($data['release_id']))->artist

@@ -48,6 +48,17 @@ class PageForm
                 ->helperText('La stå tom for å generere automatisk.')
                 ->maxLength(255),
 
+            // Status (Under arbeid/Publisert)
+            Forms\Components\Select::make('status')
+                ->label('Status')
+                ->options([
+                    'draft'     => 'Under arbeid',
+                    'published' => 'Publisert',
+                ])
+                ->default('draft')
+                ->required()
+                ->columnSpan(1),
+
             // Posisjon (unik per release) - skjult siden vi bruker move up/down-knapper
             TextInput::make('position')
                 ->label('Position')

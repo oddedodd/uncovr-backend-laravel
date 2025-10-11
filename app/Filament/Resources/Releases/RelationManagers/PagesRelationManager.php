@@ -15,6 +15,7 @@ use Filament\Tables;
 use Filament\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class PagesRelationManager extends RelationManager
 {
@@ -22,9 +23,14 @@ class PagesRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    // Cache for position data to avoid multiple queries
+    private ?array $positionCache = null;
+
     public function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->orderBy('position');
+        return parent::getEloquentQuery()
+            ->orderBy('position')
+            ->select(['id', 'title', 'slug', 'page_type', 'position', 'status', 'updated_at', 'release_id']); // Only select needed columns
     }
 
     public function form(Schema $schema): Schema
@@ -37,6 +43,8 @@ class PagesRelationManager extends RelationManager
         return $table
             ->defaultSort('position')
             ->paginated(false)
+            ->deferLoading() // Defer loading until table is visible
+            ->poll('30s') // Auto-refresh every 30 seconds
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->searchable(),
@@ -117,58 +125,64 @@ class PagesRelationManager extends RelationManager
 
     public function canMoveDown(Page $record): bool
     {
-        $maxPosition = Page::where('release_id', $record->release_id)->max('position');
-        return $record->position < $maxPosition;
+        $positionData = $this->getPositionData();
+        return $record->position < $positionData['max'];
+    }
+
+    private function getPositionData(): array
+    {
+        if ($this->positionCache === null) {
+            $releaseId = $this->getOwnerRecord()->id;
+            $pages = Page::where('release_id', $releaseId)
+                ->select(['position'])
+                ->orderBy('position')
+                ->get();
+            
+            $this->positionCache = [
+                'min' => $pages->min('position') ?? 0,
+                'max' => $pages->max('position') ?? 0,
+                'positions' => $pages->pluck('position')->toArray(),
+            ];
+        }
+        
+        return $this->positionCache;
     }
 
     public function movePageUp(Page $record): void
     {
-        $currentPosition = $record->position;
-        $targetPosition = $currentPosition - 1;
-
-        // Find the page at the target position
-        $targetPage = Page::where('release_id', $record->release_id)
-            ->where('position', $targetPosition)
-            ->first();
-
-        if ($targetPage) {
-            // Use temporary position to avoid unique constraint violation
-            $tempPosition = 999999; // Use a high number that won't conflict
-            
-            // Step 1: Move current record to temporary position
-            $record->update(['position' => $tempPosition]);
-            
-            // Step 2: Move target record to current position
-            $targetPage->update(['position' => $currentPosition]);
-            
-            // Step 3: Move current record to target position
-            $record->update(['position' => $targetPosition]);
-        }
+        $this->movePage($record, -1);
     }
 
     public function movePageDown(Page $record): void
     {
+        $this->movePage($record, 1);
+    }
+
+    private function movePage(Page $record, int $direction): void
+    {
         $currentPosition = $record->position;
-        $targetPosition = $currentPosition + 1;
-
-        // Find the page at the target position
-        $targetPage = Page::where('release_id', $record->release_id)
-            ->where('position', $targetPosition)
-            ->first();
-
-        if ($targetPage) {
-            // Use temporary position to avoid unique constraint violation
-            $tempPosition = 999999; // Use a high number that won't conflict
+        $targetPosition = $currentPosition + $direction;
+        
+        // Use database transaction for atomicity
+        DB::transaction(function () use ($record, $currentPosition, $targetPosition) {
+            // Get a safe temporary position that won't conflict
+            $tempPosition = Page::where('release_id', $record->release_id)
+                ->max('position') + 1000; // Use a high number that won't conflict
             
             // Step 1: Move current record to temporary position
-            $record->update(['position' => $tempPosition]);
+            Page::where('id', $record->id)->update(['position' => $tempPosition]);
             
             // Step 2: Move target record to current position
-            $targetPage->update(['position' => $currentPosition]);
+            Page::where('release_id', $record->release_id)
+                ->where('position', $targetPosition)
+                ->update(['position' => $currentPosition]);
             
             // Step 3: Move current record to target position
-            $record->update(['position' => $targetPosition]);
-        }
+            Page::where('id', $record->id)->update(['position' => $targetPosition]);
+        });
+        
+        // Clear cache after move operation
+        $this->positionCache = null;
     }
 
 }

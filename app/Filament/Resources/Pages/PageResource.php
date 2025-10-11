@@ -81,6 +81,10 @@ class PageResource extends Resource
             $data['position'] = $last + 1;
         }
 
+        if (array_key_exists('status', $data) && $data['status'] === 'published') {
+            $data['published_at'] = now();
+        }
+
         return $data;
     }
 
@@ -89,6 +93,11 @@ class PageResource extends Resource
         if (empty($data['slug'] ?? '') && !empty($data['title'] ?? '')) {
             $data['slug'] = Str::slug($data['title']);
         }
+
+        if (array_key_exists('status', $data)) {
+            $data['published_at'] = $data['status'] === 'published' ? now() : null;
+        }
+
         return $data;
     }
 

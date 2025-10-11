@@ -16,6 +16,11 @@ class EditPage extends EditRecord
             $data['slug'] = Str::slug($data['title']);
         }
 
+        // Handle published_at based on status
+        if (array_key_exists('status', $data)) {
+            $data['published_at'] = $data['status'] === 'published' ? now() : null;
+        }
+
         if (auth()->user()?->hasRole('artist')) {
             if (! optional(\App\Models\Release::find($data['release_id']))->artist
                 ?->user_id === auth()->id()) {
