@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
     // AUTH (krever token)
     // =========================
     Route::post('auth/login', [AuthController::class, 'login']);
+    Route::post('auth/register', [AuthController::class, 'register']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
