@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Artists\Schemas;
 
 use App\Models\Label;
 use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
@@ -31,6 +32,17 @@ class ArtistForm
                     ->helperText('La stå tom for å generere automatisk.')
                     ->maxLength(255)
                     ->unique(ignoreRecord: true),
+
+                FileUpload::make('artist_image')
+                    ->label('Artist Image')
+                    ->disk('public')
+                    ->directory('artists/images')
+                    ->visibility('public')
+                    ->image()
+                    ->imageEditor()
+                    ->maxSize(4096)
+                    ->nullable()
+                    ->columnSpan(2),
 
                 Forms\Components\Textarea::make('bio')
                     ->label('Biography')
