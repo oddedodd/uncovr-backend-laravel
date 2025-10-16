@@ -49,6 +49,11 @@ class Release extends Model
         return $this->hasMany(Page::class);
     }
 
+    public function featuredRelease()
+    {
+        return $this->hasOne(FeaturedRelease::class);
+    }
+
     // (valgfritt) litt sikkerhet: normaliser og begrens verdier
     public function setTypeAttribute($value): void
     {
@@ -82,6 +87,21 @@ class Release extends Model
         return $query->where('status', 'published');
         // Evt. også tid:
         // ->whereNotNull('published_at')->where('published_at', '<=', now());
+    }
+
+    // Featured releases
+    public function scopeFeatured($query)
+    {
+        return $query->whereHas('featuredRelease')
+            ->with(['featuredRelease' => function ($query) {
+                $query->ordered();
+            }]);
+    }
+
+    // Check if release is featured
+    public function isFeatured(): bool
+    {
+        return $this->featuredRelease()->exists();
     }
 
     // Full URL til cover-bildet (for API / app)

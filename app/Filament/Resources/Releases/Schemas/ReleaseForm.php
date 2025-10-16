@@ -10,10 +10,13 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Group;   // 👈 Bytt til Group (flat, uten kort)
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class ReleaseForm
 {
@@ -152,6 +155,27 @@ class ReleaseForm
                     // 2 kolonner øverst, content på egen rad pga columnSpanFull()
                     ->columns(2)
                     ->columnSpanFull(), // 👈 svært viktig for full bredde
+
+                // Featured section (admin only)
+                Section::make('Featured Release Settings')
+                    ->schema([
+                        Toggle::make('is_featured')
+                            ->label('Featured Release')
+                            ->helperText('Mark this release as featured (admin only)')
+                            ->visible(fn () => Auth::user()?->hasRole('admin') ?? false)
+                            ->columnSpan(1),
+
+                        TextInput::make('featured_display_order')
+                            ->label('Display Order')
+                            ->helperText('Order in which this release appears among featured releases')
+                            ->numeric()
+                            ->minValue(0)
+                            ->visible(fn ($get) => $get('is_featured') && (Auth::user()?->hasRole('admin') ?? false))
+                            ->columnSpan(1),
+                    ])
+                    ->columns(2)
+                    ->visible(fn () => Auth::user()?->hasRole('admin') ?? false)
+                    ->columnSpanFull(),
             ])
             ->columns(1); // ikke legg ekstra kolonner på rotskjemaet (unngå smal wrapper)
     }

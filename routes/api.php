@@ -32,6 +32,10 @@ Route::prefix('v1')->group(function () {
         ->where('slug', '[A-Za-z0-9\-]+')
         ->name('public.pages.by-release-slug');
 
+    // Featured releases (published only)
+    Route::get('releases/featured', [PublicReleaseController::class, 'featured'])
+        ->name('public.releases.featured');
+
     // =========================
     // AUTH (krever token)
     // =========================
