@@ -88,28 +88,16 @@ class ReleaseResource extends Resource
         return $query->whereRaw('1 = 0');
     }
 
-    // Auto-slug + published_at-håndtering (beholdt fra din versjon)
-    public static function mutateFormDataBeforeCreate(array $data): array
+
+    public static function mutateFormDataBeforeFill(array $data, $record): array
     {
-        if (empty($data['slug'] ?? '') && !empty($data['title'] ?? '')) {
-            $data['slug'] = Str::slug($data['title']);
-        }
-
-        if (array_key_exists('status', $data) && $data['status'] === 'published') {
-            $data['published_at'] = now();
-        }
-
-        return $data;
-    }
-
-    public static function mutateFormDataBeforeSave(array $data): array
-    {
-        if (empty($data['slug'] ?? '') && !empty($data['title'] ?? '')) {
-            $data['slug'] = Str::slug($data['title']);
-        }
-
-        if (array_key_exists('status', $data)) {
-            $data['published_at'] = $data['status'] === 'published' ? now() : null;
+        // Load featured release data for editing
+        if ($record && $record->featuredRelease) {
+            $data['is_featured'] = true;
+            $data['featured_display_order'] = $record->featuredRelease->display_order;
+        } else {
+            $data['is_featured'] = false;
+            $data['featured_display_order'] = null;
         }
 
         return $data;

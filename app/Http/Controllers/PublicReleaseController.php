@@ -71,4 +71,19 @@ class PublicReleaseController extends Controller
 
         return new ReleaseResource($release);
     }
+
+    // GET /api/v1/releases/featured  (published + featured releases)
+    public function featured()
+    {
+        $releases = Release::query()
+            ->published()
+            ->whereHas('featuredRelease')
+            ->with(['artist:id,name,slug,artist_image', 'featuredRelease'])
+            ->join('featured_releases', 'releases.id', '=', 'featured_releases.release_id')
+            ->orderBy('featured_releases.display_order', 'asc')
+            ->select('releases.*')
+            ->get();
+
+        return ReleaseResource::collection($releases);
+    }
 }
